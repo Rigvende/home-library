@@ -1,3 +1,23 @@
+# Home Library
+
+Simple home library app to add and manage books.
+
+## Features
+
+- Add / edit / delete books
+- Search across title, author, year, ISBN, notes
+- Mark read / unread
+- Persists to **localStorage** (no backend required)
+
+## Run locally
+
+```bash
+cd home-library
+npm run dev
+```
+
+Then open `http://localhost:3000`.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

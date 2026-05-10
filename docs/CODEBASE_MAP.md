@@ -10,24 +10,32 @@
 home-library/
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx        # Root layout: fonts, metadata, <body> wrapper
-│   │   ├── page.tsx          # / route: mounts <LibraryApp />
-│   │   └── globals.css       # Tailwind v4 global styles
+│   │   ├── layout.tsx              # Root layout: fonts, metadata, <body> wrapper
+│   │   ├── page.tsx                # / route: mounts <LibraryApp />
+│   │   └── globals.css             # Tailwind v4 global styles
 │   ├── components/
-│   │   └── LibraryApp.tsx    # Entire UI: state, forms, list, search
-│   └── lib/
-│       └── books.ts          # Domain model, localStorage I/O, CRUD helpers
+│   │   └── LibraryApp.tsx          # Entire UI: state, forms, list, search
+│   ├── lib/
+│   │   ├── books.ts                # Domain model, localStorage I/O, CRUD helpers
+│   │   └── __tests__/
+│   │       └── books.test.ts       # Unit tests for books.ts (Vitest)
+│   └── test/
+│       └── setup.ts                # Vitest global setup (@testing-library/jest-dom)
+├── tests/
+│   └── e2e/
+│       └── library.spec.ts         # Playwright E2E tests for the full UI
 ├── docs/
-│   └── CODEBASE_MAP.md       # This file
+│   └── CODEBASE_MAP.md             # This file
 ├── .cursor/
+│   ├── mcp.json                    # MCP server config (playwright, filesystem, github)
 │   └── skills/
-│       └── cartograph/
-│           └── SKILL.md      # Cartograph skill definition
-├── AGENTS.md                 # Agent rules (Next.js version warnings)
-├── CLAUDE.md                 # Agent config (references this file)
-├── next.config.ts            # Next.js config (currently empty)
-├── tsconfig.json             # TypeScript config
-└── package.json              # Dependencies and scripts
+│       ├── cartograph/SKILL.md     # Cartograph skill definition
+│       └── dor/SKILL.md            # Definition of Ready skill
+├── playwright.config.ts            # Playwright config (baseURL, webServer, chromium)
+├── vitest.config.ts                # Vitest config (jsdom, path aliases, excludes e2e)
+├── next.config.ts                  # Next.js config (currently empty)
+├── tsconfig.json                   # TypeScript config
+└── package.json                    # Dependencies and scripts
 ```
 
 ---
@@ -67,7 +75,8 @@ Single `'use client'` component that owns all application state.
 
 | Hook | Type | Purpose |
 |------|------|---------|
-| `useState<Book[]>` | `books` | Master book list, initialised from `loadBooks()` |
+| `useState<Book[]>` | `books` | Master book list, populated from `loadBooks()` after hydration |
+| `useRef<boolean>` | `hydrated` | Guards the save effect from firing before the load effect |
 | `useState<string>` | `query` | Live search string |
 | `useState<Draft>` | `draft` | Current add/edit form values |
 | `useState<string \| null>` | `editingId` | `null` = add mode; set = edit mode |
@@ -83,7 +92,10 @@ Single `'use client'` component that owns all application state.
 
 | Hook | Trigger | Effect |
 |------|---------|--------|
-| `useEffect` | `books` changes | Calls `saveBooks(books)` → persists to `localStorage` |
+| `useEffect` (save) | `books` changes | Calls `saveBooks(books)` if `hydrated.current` is true |
+| `useEffect` (load) | mount only | Calls `loadBooks()`, sets books, marks `hydrated.current = true` |
+
+> The load effect runs after the save effect (definition order). This prevents the save effect from firing with an empty array before localStorage has been read.
 
 **Event handlers**
 
@@ -120,12 +132,44 @@ Applies Geist Sans + Geist Mono via CSS variables, sets `<html lang="en">`, wrap
 
 ---
 
+### `src/lib/__tests__/books.test.ts` — Unit tests
+
+14 tests covering `createBook`, `updateBook`, `loadBooks`, `saveBooks` using Vitest + jsdom.
+
+| Suite | Tests |
+|-------|-------|
+| `createBook` | stamps id/timestamps, preserves all fields, unique ids per call |
+| `updateBook` | merges patch, preserves unpatched fields, bumps updatedAt, never changes id/addedAt |
+| `loadBooks` | empty storage, invalid JSON, non-array, filters invalid entries, normalizes bad status |
+| `saveBooks + loadBooks` | round-trip persists and restores, empty list works |
+
+Run: `npm test`
+
+---
+
+### `tests/e2e/library.spec.ts` — E2E tests
+
+13 tests covering the full UI in a real Chromium browser via Playwright.
+
+| Area | Tests |
+|------|-------|
+| Add book | adds and shows, blocks missing title/author, resets form |
+| Search | filter by author, filter by title, clearing restores all |
+| Delete | removes from list |
+| Edit | updates values, cancel restores form |
+| Toggle | mark read, mark unread |
+| Persistence | books survive page reload |
+
+Run: `npm run test:e2e`
+
+---
+
 ## 3. Key entry points
 
 | Entry point | Description |
 |-------------|-------------|
 | `src/app/page.tsx` | Browser: renders the app at `/` |
-| `src/lib/books.ts → loadBooks()` | Runtime: first read of persisted data |
+| `src/lib/books.ts → loadBooks()` | Runtime: first read of persisted data (after hydration) |
 | `src/lib/books.ts → saveBooks()` | Runtime: every books state change persists here |
 
 ---
@@ -138,6 +182,12 @@ Applies Geist Sans + Geist Mono via CSS variables, sets `<html lang="en">`, wrap
 src/app/page.tsx
   └── src/components/LibraryApp.tsx
         └── src/lib/books.ts
+
+src/lib/__tests__/books.test.ts
+  └── src/lib/books.ts
+
+tests/e2e/library.spec.ts
+  └── (browser: http://localhost:3000)
 ```
 
 ### Data flow
@@ -145,14 +195,14 @@ src/app/page.tsx
 ```
 localStorage (homeLibrary.books.v1)
   │
-  └── loadBooks()
-        │  (initial state)
+  └── loadBooks()  ← useEffect on mount (after hydration)
+        │
         ▼
   LibraryApp — useState<Book[]>(books)
         │
   user actions: add / edit / delete / toggleRead
         │
-        └── saveBooks()  ← useEffect on [books]
+        └── saveBooks()  ← useEffect on [books] (guarded by hydrated ref)
               │
               ▼
         localStorage (homeLibrary.books.v1)
@@ -179,4 +229,7 @@ draft
 | `react` / `react-dom` | 19.2.4 | UI rendering |
 | `tailwindcss` | ^4 | Utility-first styling |
 | `typescript` | ^5 | Static typing |
-| `@types/react` | ^19 | React type definitions |
+| `vitest` | ^4 | Unit test runner |
+| `@playwright/test` | ^1 | E2E test runner |
+| `jsdom` | ^29 | DOM environment for unit tests |
+| `@testing-library/jest-dom` | ^6 | Custom DOM matchers |

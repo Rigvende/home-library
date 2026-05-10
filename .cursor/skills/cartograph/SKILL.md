@@ -30,15 +30,24 @@ Add the same line to every `.cursor/rules/*.mdc` file.
 home-library/
 ├── src/
 │   ├── app/
-│   │   ├── layout.tsx      # Root layout — fonts (Geist), metadata, body wrapper
-│   │   ├── page.tsx        # Entry page — mounts <LibraryApp />
-│   │   └── globals.css     # Tailwind v4 global styles
+│   │   ├── layout.tsx              # Root layout — fonts (Geist), metadata, body wrapper
+│   │   ├── page.tsx                # Entry page — mounts <LibraryApp />
+│   │   └── globals.css             # Tailwind v4 global styles
 │   ├── components/
-│   │   └── LibraryApp.tsx  # Main UI — all library state & interactions
-│   └── lib/
-│       └── books.ts        # Domain model, localStorage persistence, CRUD helpers
+│   │   └── LibraryApp.tsx          # Main UI — all library state & interactions
+│   ├── lib/
+│   │   ├── books.ts                # Domain model, localStorage persistence, CRUD helpers
+│   │   └── __tests__/
+│   │       └── books.test.ts       # Unit tests (Vitest)
+│   └── test/
+│       └── setup.ts                # Vitest global setup
+├── tests/
+│   └── e2e/
+│       └── library.spec.ts         # Playwright E2E tests
 ├── docs/
-│   └── CODEBASE_MAP.md     # Generated architecture map (output of this skill)
+│   └── CODEBASE_MAP.md             # Generated architecture map (output of this skill)
+├── playwright.config.ts
+├── vitest.config.ts
 ├── next.config.ts
 ├── tsconfig.json
 └── package.json
@@ -52,6 +61,8 @@ home-library/
 | `src/components/LibraryApp.tsx` | UI: renders book list, add/edit/delete forms, status filters |
 | `src/app/page.tsx` | Route: shell that mounts `<LibraryApp />` |
 | `src/app/layout.tsx` | Layout: fonts, metadata, body styling |
+| `src/lib/__tests__/books.test.ts` | Unit tests — 14 tests via Vitest + jsdom |
+| `tests/e2e/library.spec.ts` | E2E tests — 13 tests via Playwright |
 
 ## Data model
 

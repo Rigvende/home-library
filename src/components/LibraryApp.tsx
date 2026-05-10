@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Book, ReadingStatus } from '@/lib/books';
 import { createBook, loadBooks, saveBooks, updateBook } from '@/lib/books';
 
@@ -23,14 +23,22 @@ const emptyDraft: Draft = {
 };
 
 export function LibraryApp() {
-  const [books, setBooks] = useState<Book[]>(() => loadBooks());
+  const [books, setBooks] = useState<Book[]>([]);
   const [query, setQuery] = useState('');
   const [draft, setDraft] = useState<Draft>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const hydrated = useRef(false);
 
+  // Save runs first so it can guard against firing before the load effect below.
   useEffect(() => {
-    saveBooks(books);
+    if (hydrated.current) saveBooks(books);
   }, [books]);
+
+  // Runs second on mount: reads localStorage (browser-only) and marks hydrated.
+  useEffect(() => {
+    setBooks(loadBooks());
+    hydrated.current = true;
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

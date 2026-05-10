@@ -4,6 +4,10 @@
       "command": "npx",
       "args": ["@playwright/mcp@latest"]
     },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:/Users/Legion/home-library"]
+    },
     "github": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],

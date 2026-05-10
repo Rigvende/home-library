@@ -22,7 +22,7 @@ After writing the file, ensure `CLAUDE.md` contains the line:
 For detailed architecture, see docs/CODEBASE_MAP.md.
 ```
 
-If the project does not use `CLAUDE.md`, add the same line to every `.cursor/rules/*.mdc` file instead.
+Add the same line to every `.cursor/rules/*.mdc` file.
 
 ## Project snapshot
 

@@ -56,6 +56,9 @@ describe('updateBook', () => {
     const updated = updateBook(base, { status: 'read', notes: 'Loved it.' });
     expect(updated.status).toBe('read');
     expect(updated.notes).toBe('Loved it.');
+    expect(updated).not.toBe(base);
+    expect(base.status).toBe('unread');
+    expect(base.notes).toBeUndefined();
   });
 
   it('preserves fields not included in the patch', () => {
@@ -64,11 +67,13 @@ describe('updateBook', () => {
     expect(updated.author).toBe('Frank Herbert');
     expect(updated.id).toBe('test-id');
     expect(updated.addedAt).toBe('2024-01-01T00:00:00.000Z');
+    expect(updated).not.toBe(base);
+    expect(base.status).toBe('unread');
   });
 
   it('bumps updatedAt to a later timestamp', () => {
     const updated = updateBook(base, { status: 'read' });
-    expect(updated.updatedAt >= base.updatedAt).toBe(true);
+    expect(updated.updatedAt).not.toBe(base.updatedAt);
   });
 
   it('never changes the id or addedAt', () => {

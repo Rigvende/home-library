@@ -145,12 +145,13 @@ test('mark read toggles the status badge to Read', async ({ page }) => {
   await page.getByPlaceholder('J.R.R. Tolkien').fill('Frank Herbert');
   await page.getByRole('button', { name: 'Add book' }).click();
 
-  await expect(page.locator('span').filter({ hasText: /^Unread$/ })).toBeVisible();
+  const bookList = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Your books' }) });
+  await expect(bookList.getByText('Unread', { exact: true })).toBeVisible();
 
   await page.getByRole('button', { name: 'Mark read' }).click();
 
-  await expect(page.locator('span').filter({ hasText: /^Read$/ })).toBeVisible();
-  await expect(page.locator('span').filter({ hasText: /^Unread$/ })).not.toBeVisible();
+  await expect(bookList.getByText('Read', { exact: true })).toBeVisible();
+  await expect(bookList.getByText('Unread', { exact: true })).not.toBeVisible();
   await expect(page.getByRole('button', { name: 'Mark unread' })).toBeVisible();
 });
 
@@ -162,7 +163,8 @@ test('mark unread toggles the status badge back to Unread', async ({ page }) => 
   await page.getByRole('button', { name: 'Mark read' }).click();
   await page.getByRole('button', { name: 'Mark unread' }).click();
 
-  await expect(page.locator('span').filter({ hasText: /^Unread$/ })).toBeVisible();
+  const bookList = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Your books' }) });
+  await expect(bookList.getByText('Unread', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Mark read' })).toBeVisible();
 });
 
